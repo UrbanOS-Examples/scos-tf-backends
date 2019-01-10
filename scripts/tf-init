@@ -37,8 +37,8 @@ _get_tfvar() {
 }
 
 _json2hcl() {
-    local -r json2hcl=$(_file "${git_root}/scripts/bin/json2hcl.v0.0.6.$(uname -s).$(uname -m)") || \
-        _die "Unable to find json2hcl for \"$(uname -sm)\" in ${git_root}/scripts/bin/"
+    local -r json2hcl=$(_file "${git_root}/shared/scripts/bin/json2hcl.v0.0.6.$(uname -s).$(uname -m)") || \
+        _die "Unable to find json2hcl for \"$(uname -sm)\" in ${git_root}/shared/scripts/bin/"
     "${json2hcl}" "${@}"
 }
 
@@ -55,13 +55,13 @@ set -o pipefail
 
 git_root=$(git rev-parse --show-toplevel) || _die "Failed to resolve git_root.  Are you in a git repository?"
 
-backend_config="${git_root}/backends/alm.conf"
+backend_config="${git_root}/shared/backends/alm.conf"
 all_features=false
 
 until [ ${#} -eq 0 ]; do
     case "${1}" in
         -s|--sandbox)
-            backend_config="${git_root}/backends/sandbox-alm.conf"
+            backend_config="${git_root}/shared/backends/sandbox-alm.conf"
             ;;
         -w|--workspace)
             workspace=${2}
@@ -87,7 +87,9 @@ else
         _die "Failed to find a tfvars file for the workspace \"${workspace}\""
     echo "Using \"${varfile}\""
 
-    enabled_features=$(_get_tfvar "${varfile}" enabled_features | jq --raw-output '.[]')
+    if [ "null" != "$(_get_tfvar "${varfile}" enabled_features)" ]; then
+        enabled_features=$(_get_tfvar "${varfile}" enabled_features | jq --raw-output '.[]')
+    fi
 fi
 
 for feature in ${enabled_features}; do
