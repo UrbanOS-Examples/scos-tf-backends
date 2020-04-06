@@ -78,24 +78,6 @@ until [ ${#} -eq 0 ]; do
     shift
 done
 
-rm -f _feature*.tf
-
-if ${all_features}; then
-    enabled_features=$(ls features/ | cut -d '.' -f 1)
-else
-    varfile=$(_file "variables/${workspace}.tfvars" || _file "variables/sandbox.tfvars") ||
-        _die "Failed to find a tfvars file for the workspace \"${workspace}\""
-    echo "Using \"${varfile}\""
-
-    if [ "null" != "$(_get_tfvar "${varfile}" enabled_features)" ]; then
-        enabled_features=$(_get_tfvar "${varfile}" enabled_features | jq --raw-output '.[]')
-    fi
-fi
-
-for feature in ${enabled_features}; do
-    _enable_feature $feature
-done
-
 echo "removing .terraform"
 rm -rf .terraform
 
@@ -117,5 +99,23 @@ if (echo "${workspaces}" | grep -xq ${workspace}); then
 else
     terraform workspace new ${workspace} || _die "Failed to create new workspace \"${workspace}\""
 fi
+
+rm -f _feature*.tf
+
+if ${all_features}; then
+    enabled_features=$(ls features/ | cut -d '.' -f 1)
+else
+    varfile=$(_file "variables/${workspace}.tfvars" || _file "variables/sandbox.tfvars") ||
+        _die "Failed to find a tfvars file for the workspace \"${workspace}\""
+    echo "Using \"${varfile}\""
+
+    if [ "null" != "$(_get_tfvar "${varfile}" enabled_features)" ]; then
+        enabled_features=$(_get_tfvar "${varfile}" enabled_features | jq --raw-output '.[]')
+    fi
+fi
+
+for feature in ${enabled_features}; do
+    _enable_feature $feature
+done
 
 exit 0
